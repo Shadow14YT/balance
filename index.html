@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma de Análisis Financiero Internacional - UPQ</title>
+    
+    <!-- ENLACE OFICIAL DE EXCEL SIN BLOQUEOS LOCALES -->
+    <script src="https://unpkg.com"></script>
+    
+    <!-- VINCULACIÓN CON EL ESTILO CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>💼 Consultor Financiero de Negocios Internacionales</h1>
+        <p>Diseñado especialmente para la comunidad universitaria de la UPQ</p>
+    </div>
+    
+    <!-- ZONA DE CARGA DE EXCEL -->
+    <div class="excel-upload-zone">
+        <h3>📂 Cargar Datos desde Excel</h3>
+        <p>Selecciona un archivo .xlsx donde la Columna A tenga los nombres de las cuentas y la Columna B los montos.</p>
+        <input type="file" id="excelFile" accept=".xlsx, .xls" />
+    </div>
+
+    <form id="financialForm">
+        <div class="grid">
+            <!-- COLUMNA IZQUIERDA: ACTIVOS -->
+            <div>
+                <h2>Activo Circulante (Corto Plazo)</h2>
+                <div class="form-group">
+                    <label for="caja">Efectivo / Caja / Bancos:</label>
+                    <input type="number" id="caja" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="clientes">Clientes (Cuentas por cobrar):</label>
+                    <input type="number" id="clientes" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="inventarios">Inventarios (Mercancías):</label>
+                    <input type="number" id="inventarios" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="ivaAcreditar">IVA por Acreditar / Pagado:</label>
+                    <input type="number" id="ivaAcreditar" value="0">
+                </div>
+
+                <h2>Activo No Circulante (Largo Plazo)</h2>
+                <div class="form-group">
+                    <label for="fijo">Propiedades, Planta y Equipo:</label>
+                    <input type="number" id="fijo" value="0">
+                </div>
+                <div class="form-group" style="background: #fff5f5;">
+                    <label for="depreciacion" class="negative-label">(-) Depreciación Acumulada:</label>
+                    <input type="number" id="depreciacion" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="intangible">Activos Intangibles (Patentes, Marcas):</label>
+                    <input type="number" id="intangible" value="0">
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA: PASIVOS Y CAPITAL -->
+            <div>
+                <h2>Pasivo a Corto Plazo</h2>
+                <div class="form-group">
+                    <label for="proveedores">Proveedores:</label>
+                    <input type="number" id="proveedores" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="docPagarCorto">Documentos por Pagar (C.P.):</label>
+                    <input type="number" id="docPagarCorto" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="impuestos">Impuestos por Pagar:</label>
+                    <input type="number" id="impuestos" value="0">
+                </div>
+
+                <h2>Pasivo a Largo Plazo</h2>
+                <div class="form-group">
+                    <label for="creditos">Acreedores Hipotecarios / Bancarios:</label>
+                    <input type="number" id="creditos" value="0">
+                </div>
+
+                <h2>Capital Contable</h2>
+                <div class="form-group">
+                    <label for="capitalSocial">Capital Social (Aportaciones):</label>
+                    <input type="number" id="capitalSocial" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="utilidades">Utilidades Retenidas / del Ejercicio:</label>
+                    <input type="number" id="utilidades" value="0">
+                </div>
+                
+                <h2 style="color: #2b6cb0;">Tasas de Cambio Globales</h2>
+                <div class="form-group">
+                    <label for="tcUsd">Tipo de Cambio (MXN por 1 USD):</label>
+                    <input type="number" id="tcUsd" value="20.00" step="0.01">
+                </div>
+            </div>
+        </div>
+
+        <button type="button" onclick="procesarFinanzas()">Generar Estados y Análisis Métrico</button>
+    </form>
+
+    <!-- CUADRO DE RESULTADOS INTELIGENTE -->
+    <div id="resultado" class="result-box">
+        <div id="statusMensaje" class="status"></div>
+        
+        <table class="summary-table">
+            <tr><td>Total Activo Circulante:</td><td align="right">$<span id="resCirc">0</span></td></tr>
+            <tr><td>Total Activo No Circulante:</td><td align="right">$<span id="resNoCirc">0</span></td></tr>
+            <tr style="background: #edf2f7;"><td>TOTAL ACTIVOS (MXN):</td><td align="right">$<span id="resTotalActivo">0</span></td></tr>
+            <tr><td>Total Pasivo Corto Plazo:</td><td align="right">$<span id="resPasCorto">0</span></td></tr>
+            <tr><td>Total Pasivo Largo Plazo:</td><td align="right">$<span id="resPasLargo">0</span></td></tr>
+            <tr><td>Total Capital Contable:</td><td align="right">$<span id="resCap">0</span></td></tr>
+            <tr style="background: #edf2f7;"><td>TOTAL PASIVO + CAPITAL (MXN):</td><td align="right">$<span id="resTotalPasCap">0</span></td></tr>
+        </table>
+
+        <!-- DIVISION INTERNACIONAL Y RATIOS -->
+        <div class="analysis-section">
+            <div class="card">
+                <h3>📊 Liquidez (Prueba del Ácido)</h3>
+                <div class="ratio-val" id="ratioLiquidez">0.00</div>
+                <div class="ratio-desc">Mide la capacidad de pago sin vender inventario. Ideal: > 1.0</div>
+            </div>
+            <div class="card">
+                <h3>⚖️ Nivel de Apalancamiento</h3>
+                <div class="ratio-val" id="ratioDeuda">0.0%</div>
+                <div class="ratio-desc">Porcentaje de los activos financiado por deudas. Ideal: 40% - 60%</div>
+            </div>
+            <div class="card" style="grid-column: span 2; background: #ebf8ff; border-color: #bee3f8;">
+                <h3>🌎 Conversión Multidivisa Comercial</h3>
+                <p style="margin: 5px 0; font-size: 15px;"><strong>Total Activos en USD:</strong> $<span id="valUsd" style="font-weight:bold;">0.00</span></p>
+                <div class="ratio-desc">Cálculo basado en el tipo de cambio corporativo ingresado.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- VINCULACIÓN CON LA LÓGICA DE JAVASCRIPT -->
+<script src="script.js"></script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plataforma de Análisis Financiero Internacional - UPQ</title>
+    
+    <!-- Librería oficial por internet (Funcionará perfecto en GitHub) -->
+    <script src="https://jsdelivr.net"></script>
+    
+    <!-- Vinculación con tu archivo CSS -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>💼 Consultor Financiero de Negocios Internacionales</h1>
+        <p>Diseñado especialmente para la comunidad universitaria de la UPQ</p>
+    </div>
+    
+    <!-- ZONA DE CARGA DE EXCEL -->
+    <div class="excel-upload-zone">
+        <h3>📂 Cargar Datos desde Excel</h3>
+        <p>Selecciona un archivo .xlsx donde la Columna A tenga los nombres de las cuentas y la Columna B los montos.</p>
+        <input type="file" id="excelFile" accept=".xlsx, .xls" />
+    </div>
+
+    <form id="financialForm">
+        <div class="grid">
+            <!-- COLUMNA IZQUIERDA: ACTIVOS -->
+            <div>
+                <h2>Activo Circulante (Corto Plazo)</h2>
+                <div class="form-group">
+                    <label for="caja">Efectivo / Caja / Bancos:</label>
+                    <input type="number" id="caja" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="clientes">Clientes (Cuentas por cobrar):</label>
+                    <input type="number" id="clientes" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="inventarios">Inventarios (Mercancías):</label>
+                    <input type="number" id="inventarios" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="ivaAcreditar">IVA por Acreditar / Pagado:</label>
+                    <input type="number" id="ivaAcreditar" value="0">
+                </div>
+
+                <h2>Activo No Circulante (Largo Plazo)</h2>
+                <div class="form-group">
+                    <label for="fijo">Propiedades, Planta y Equipo:</label>
+                    <input type="number" id="fijo" value="0">
+                </div>
+                <div class="form-group" style="background: #fff5f5;">
+                    <label for="depreciacion" class="negative-label">(-) Depreciación Acumulada:</label>
+                    <input type="number" id="depreciacion" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="intangible">Activos Intangibles (Patentes, Marcas):</label>
+                    <input type="number" id="intangible" value="0">
+                </div>
+            </div>
+
+            <!-- COLUMNA DERECHA: PASIVOS Y CAPITAL -->
+            <div>
+                <h2>Pasivo a Corto Plazo</h2>
+                <div class="form-group">
+                    <label for="proveedores">Proveedores:</label>
+                    <input type="number" id="proveedores" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="docPagarCorto">Documentos por Pagar (C.P.):</label>
+                    <input type="number" id="docPagarCorto" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="impuestos">Impuestos por Pagar:</label>
+                    <input type="number" id="impuestos" value="0">
+                </div>
+
+                <h2>Pasivo a Largo Plazo</h2>
+                <div class="form-group">
+                    <label for="creditos">Acreedores Hipotecarios / Bancarios:</label>
+                    <input type="number" id="creditos" value="0">
+                </div>
+
+                <h2>Capital Contable</h2>
+                <div class="form-group">
+                    <label for="capitalSocial">Capital Social (Aportaciones):</label>
+                    <input type="number" id="capitalSocial" value="0">
+                </div>
+                <div class="form-group">
+                    <label for="utilidades">Utilidades Retenidas / del Ejercicio:</label>
+                    <input type="number" id="utilidades" value="0">
+                </div>
+                
+                <h2 style="color: #2b6cb0;">Tasas de Cambio Globales</h2>
+                <div class="form-group">
+                    <label for="tcUsd">Tipo de Cambio (MXN por 1 USD):</label>
+                    <input type="number" id="tcUsd" value="20.00" step="0.01">
+                </div>
+            </div>
+        </div>
+
+        <button type="button" onclick="procesarFinanzas()">Generar Estados y Análisis Métrico</button>
+    </form>
+
+    <!-- CUADRO DE RESULTADOS INTELIGENTE -->
+    <div id="resultado" class="result-box">
+        <div id="statusMensaje" class="status"></div>
+        
+        <table class="summary-table">
+            <tr><td>Total Activo Circulante:</td><td align="right">$<span id="resCirc">0</span></td></tr>
+            <tr><td>Total Activo No Circulante:</td><td align="right">$<span id="resNoCirc">0</span></td></tr>
+            <tr style="background: #edf2f7;"><td>TOTAL ACTIVOS (MXN):</td><td align="right">$<span id="resTotalActivo">0</span></td></tr>
+            <tr><td>Total Pasivo Corto Plazo:</td><td align="right">$<span id="resPasCorto">0</span></td></tr>
+            <tr><td>Total Pasivo Largo Plazo:</td><td align="right">$<span id="resPasLargo">0</span></td></tr>
+            <tr><td>Total Capital Contable:</td><td align="right">$<span id="resCap">0</span></td></tr>
+            <tr style="background: #edf2f7;"><td>TOTAL PASIVO + CAPITAL (MXN):</td><td align="right">$<span id="resTotalPasCap">0</span></td></tr>
+        </table>
+
+        <!-- DIVISION INTERNACIONAL Y RATIOS -->
+        <div class="analysis-section">
+            <div class="card">
+                <h3>📊 Liquidez (Prueba del Ácido)</h3>
+                <div class="ratio-val" id="ratioLiquidez">0.00</div>
+                <div class="ratio-desc">Mide la capacidad de pago sin vender inventario. Ideal: > 1.0</div>
+            </div>
+            <div class="card">
+                <h3>⚖️ Nivel de Apalancamiento</h3>
+                <div class="ratio-val" id="ratioDeuda">0.0%</div>
+                <div class="ratio-desc">Porcentaje de los activos financiado por deudas. Ideal: 40% - 60%</div>
+            </div>
+            <div class="card" style="grid-column: span 2; background: #ebf8ff; border-color: #bee3f8;">
+                <h3>🌎 Conversión Multidivisa Comercial</h3>
+                <p style="margin: 5px 0; font-size: 15px;"><strong>Total Activos en USD:</strong> $<span id="valUsd" style="font-weight:bold;">0.00</span></p>
+                <div class="ratio-desc">Cálculo basado en el tipo de cambio corporativo ingresado.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
